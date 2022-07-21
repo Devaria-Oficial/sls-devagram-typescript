@@ -12,7 +12,7 @@ plugins:
 
 functions:
   register:
-    handler: functions/auth.register
+    handler: src/functions/auth.register
     events:
       - http:
           path: register
