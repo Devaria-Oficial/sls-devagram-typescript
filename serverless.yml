@@ -1,11 +1,18 @@
 service: sls-devagram-typescript
 frameworkVersion: '3'
 
+custom:
+  userPoolId: 'us-east-1_oluFdhtE1'
+  userPoolClientId: '5pvfrf15rb853d1fppj86kv5d8'
+
 provider:
   name: aws
   runtime: nodejs14.x
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
+  environment:
+    USER_POOL_ID: ${self:custom.userPoolId}
+    USER_POOL_CLIENT_ID: ${self:custom.userPoolClientId}
 
 plugins:
   - serverless-plugin-typescript
