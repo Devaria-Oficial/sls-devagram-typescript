@@ -25,6 +25,13 @@ functions:
           path: register
           method: post
           cors: true
+  confirmEmail:
+    handler: src/functions/auth.confirmEmail
+    events:
+      - http:
+          path: confirmEmail
+          method: post
+          cors: true
 
 resources:
   Resources:
