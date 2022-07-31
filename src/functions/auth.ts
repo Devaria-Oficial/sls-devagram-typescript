@@ -9,6 +9,7 @@ import { User } from '../types/models/User';
 import { UserModel } from '../models/UserModel';
 import { parse } from 'aws-multipart-parser';
 import { FileData } from 'aws-multipart-parser/dist/models';
+import { ChangePasswordRequest } from '../types/auth/ChangePasswordRequest';
 
 export const register : Handler = async(event: APIGatewayEvent) 
     : Promise<DefaultJsonResponse> => {
@@ -103,5 +104,69 @@ export const confirmEmail : Handler = async(event: APIGatewayEvent) :
     }catch(error){
         console.log('Error on confirm user:', error);
         return formatDefaultResponse(500, 'Erro ao confirmar usuario! Tente novamente ou contacte o administrador do sistema.');
+    }
+}
+
+export const forgotPassword : Handler = async(event: APIGatewayEvent) : 
+    Promise<DefaultJsonResponse> =>{
+    try{
+
+        const {USER_POOL_ID, USER_POOL_CLIENT_ID} = process.env;
+        if(!USER_POOL_ID || !USER_POOL_CLIENT_ID){
+            return formatDefaultResponse(500, 'ENVs do Cognito não encontradas.');
+        }
+
+        if(!event.body){
+            return formatDefaultResponse(400, 'Parâmetros de entrada inválidos');
+        }
+
+        const request = JSON.parse(event.body);
+        const {email} = request;
+
+        if(!email || !email.match(emailRegex)){
+            return formatDefaultResponse(400, 'Email inválido');
+        }
+
+        await new CognitoServices(USER_POOL_ID, USER_POOL_CLIENT_ID).forgotPassword(email);
+        return formatDefaultResponse(200, 'Solicitação de troca de senha enviada com sucesso!');
+    }catch(error){
+        console.log('Error on request forgot password user:', error);
+        return formatDefaultResponse(500, 'Erro ao solicitar troca de senha do usuario! Tente novamente ou contacte o administrador do sistema.');
+    }
+}
+
+export const changePassword : Handler = async(event: APIGatewayEvent) : 
+    Promise<DefaultJsonResponse> =>{
+    try{
+
+        const {USER_POOL_ID, USER_POOL_CLIENT_ID} = process.env;
+        if(!USER_POOL_ID || !USER_POOL_CLIENT_ID){
+            return formatDefaultResponse(500, 'ENVs do Cognito não encontradas.');
+        }
+
+        if(!event.body){
+            return formatDefaultResponse(400, 'Parâmetros de entrada inválidos');
+        }
+
+        const request = JSON.parse(event.body) as ChangePasswordRequest;
+        const {email, verificationCode, password} = request;
+
+        if(!email || !email.match(emailRegex)){
+            return formatDefaultResponse(400, 'Email inválido');
+        }
+
+        if(!verificationCode || verificationCode.length !== 6){
+            return formatDefaultResponse(400, 'Código inválido');
+        }
+
+        if(!password || !password.match(passwordRegex)){
+            return formatDefaultResponse(400, 'Senha inválida');
+        }
+
+        await new CognitoServices(USER_POOL_ID, USER_POOL_CLIENT_ID).changePassword(email, password, verificationCode);
+        return formatDefaultResponse(200, 'Senha alterada com sucesso!');
+    }catch(error){
+        console.log('Error on change password user:', error);
+        return formatDefaultResponse(500, 'Erro ao trocar senha do usuario! Tente novamente ou contacte o administrador do sistema.');
     }
 }
