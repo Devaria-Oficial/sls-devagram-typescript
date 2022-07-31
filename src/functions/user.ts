@@ -1,3 +1,4 @@
+import { validateEnvs } from './../utils/environmentsUtils';
 import { imageExtensionsAllowed } from './../constants/Regexes';
 import { S3Service } from './../services/S3Services';
 import { UserModel } from './../models/UserModel';
@@ -10,9 +11,10 @@ import { FileData } from 'aws-multipart-parser/dist/models';
 export const me: Handler = async (event: APIGatewayEvent):
     Promise<DefaultJsonResponse> => {
     try {
-        const {USER_TABLE,AVATAR_BUCKET} = process.env;
-        if (!USER_TABLE || !AVATAR_BUCKET) {
-            return formatDefaultResponse(500, 'ENVs para servico não encontradas.');
+        const { AVATAR_BUCKET, error } = validateEnvs(['AVATAR_BUCKET',
+            'USER_TABLE']);
+        if (error) {
+            return formatDefaultResponse(500, error);
         }
 
         const userId = getUserIdFromEvent(event);
@@ -36,9 +38,10 @@ export const me: Handler = async (event: APIGatewayEvent):
 export const update : Handler = async(event : APIGatewayEvent) :
     Promise<DefaultJsonResponse> =>{
     try{
-        const {USER_TABLE,AVATAR_BUCKET} = process.env;
-        if (!USER_TABLE || !AVATAR_BUCKET) {
-            return formatDefaultResponse(500, 'ENVs para servico não encontradas.');
+        const { AVATAR_BUCKET, error } = validateEnvs(['AVATAR_BUCKET',
+            'USER_TABLE']);
+        if (error) {
+            return formatDefaultResponse(500, error);
         }
 
         const userId = getUserIdFromEvent(event);
