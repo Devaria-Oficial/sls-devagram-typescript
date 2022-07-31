@@ -18,6 +18,7 @@
     "amazon-cognito-identity-js": "^5.2.10",
     "aws-multipart-parser": "^0.2.1",
     "dynamoose": "^2.8.6",
+    "moment": "^2.29.4",
     "serverless-apigw-binary": "^0.4.4",
     "uuid": "^8.3.2"
   }
