@@ -26,4 +26,7 @@ const UserSchema = new dynamoose.Schema({
 }, { saveUnknown: true});
 
 const userTable = process.env.USER_TABLE || '';
-export const UserModel = dynamoose.model(userTable, UserSchema);
+export const UserModel = dynamoose.model(userTable, UserSchema, { 
+    create: false,
+    waitForActive: { enabled: false }
+});
