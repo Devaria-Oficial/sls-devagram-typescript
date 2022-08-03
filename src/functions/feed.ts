@@ -36,7 +36,7 @@ export const findByUserId: Handler = async (event: any):
              query.startAt(lastKey);
         }
 
-        const result = await query.limit(1).exec();
+        const result = await query.limit(20).exec();
 
         const response = {} as DefaultListPaginatedResponse;
 
@@ -55,7 +55,58 @@ export const findByUserId: Handler = async (event: any):
 
         return formatDefaultResponse(200, undefined, response);
     } catch (error) {
-        console.log('Error on follow/unfollow user:', error);
-        return formatDefaultResponse(500, 'Erro ao seguir/deixar de seguir usuario! Tente novamente ou contacte o administrador do sistema.');
+        console.log('Error on get user feed:', error);
+        return formatDefaultResponse(500, 'Erro a capturar feed por usuario! Tente novamente ou contacte o administrador do sistema.');
+    }
+}
+
+export const feedHome : Handler = async (event: any) : Promise<DefaultJsonResponse> => {
+    try{
+        const { error, POST_BUCKET } = validateEnvs(['USER_TABLE', 'POST_TABLE', 'POST_BUCKET']);
+        if (error) {
+            return formatDefaultResponse(500, error);
+        }
+
+        const userId = getUserIdFromEvent(event);
+        if(!userId){
+            return formatDefaultResponse(400, 'Usuário não encontrado.');
+        }
+
+        const user = await UserModel.get({cognitoId: userId});
+        if(!user){
+            return formatDefaultResponse(400, 'Usuário não encontrado.');
+        }
+
+        const {lastKey} = event.queryStringParameters || '';
+        
+        const userToSearch = user.following;
+        userToSearch.push(userId);
+
+        const query = PostModel.scan('userId').in(userToSearch);
+
+        if(lastKey){
+            query.startAt({id: lastKey});
+        }
+
+        const result = await query.limit(20).exec();
+        const response = {} as DefaultListPaginatedResponse;
+
+        if(result){
+            response.count = result.count;
+            response.lastKey = result.lastKey;
+
+            for(const document of result){
+                if(document && document.image){
+                    document.image = await new S3Service().getImageURL(POST_BUCKET, document.image);
+                }
+            }
+
+            response.data = result;
+        }
+
+        return formatDefaultResponse(200, undefined, response);
+    } catch (error) {
+        console.log('Error on get feed home:', error);
+        return formatDefaultResponse(500, 'Erro ao buscar feed da home! Tente novamente ou contacte o administrador do sistema.');
     }
 }
