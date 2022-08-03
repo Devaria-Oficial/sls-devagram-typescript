@@ -1,3 +1,4 @@
+import { DefaultListPaginatedResponse } from './../types/DefaultListPaginatedResponse';
 import { validateEnvs } from './../utils/environmentsUtils';
 import { imageExtensionsAllowed } from './../constants/Regexes';
 import { S3Service } from './../services/S3Services';
@@ -101,5 +102,51 @@ export const getUserById : Handler = async (event: any) : Promise<DefaultJsonRes
     }catch(error){
         console.log('Error on get user by id:', error);
         return formatDefaultResponse(500, 'Erro ao buscar dados do usuario por id! Tente novamente ou contacte o administrador do sistema.');
+    }
+}
+
+export const searchUser : Handler = async (event: any) : Promise<DefaultJsonResponse> =>{
+    try{
+        const{error, AVATAR_BUCKET} = validateEnvs(['AVATAR_BUCKET', 'USER_TABLE']);
+        if(error){
+            return formatDefaultResponse(500, error);
+        }
+
+        const {filter} = event.pathParameters;
+        if(!filter || filter.length < 3){
+            return formatDefaultResponse(400, 'Filtro não informado.');
+        }
+
+        const {lastKey} = event.queryStringParameters || '';
+
+        const query = UserModel.scan()
+                    .where("name").contains(filter)
+                    .or().where("email").contains(filter);
+
+        if(lastKey){
+            query.startAt({cognitoId:lastKey});
+        }
+
+        const result = await query.limit(5).exec();
+
+        const response = {} as DefaultListPaginatedResponse;
+
+        if(result){
+            response.count = result.count;
+            response.lastKey = result.lastKey;
+
+            for(const document of result){
+                if(document && document.avatar){
+                    document.avatar = await new S3Service().getImageURL(AVATAR_BUCKET, document.avatar);
+                }
+            }
+
+            response.data = result;
+        }
+
+        return formatDefaultResponse(200, undefined, response);
+    }catch(error){
+        console.log('Error on search user by filter:', error);
+        return formatDefaultResponse(500, 'Erro ao buscar dados usuário por nome ou email! Tente novamente ou contacte o administrador do sistema.');
     }
 }
