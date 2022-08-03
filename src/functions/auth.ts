@@ -48,7 +48,6 @@ export const register: Handler = async (event: APIGatewayEvent)
         }
 
         const cognitoUser = await new CognitoServices(USER_POOL_ID, USER_POOL_CLIENT_ID).signUp(email, password);
-
         let key = undefined;
         if (file) {
             key = await new S3Service().saveImage(AVATAR_BUCKET, 'avatar', file);
